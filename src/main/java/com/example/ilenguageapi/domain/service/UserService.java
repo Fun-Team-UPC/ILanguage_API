@@ -21,8 +21,17 @@ public interface UserService {
     User assignLanguageById(Long userId, Long languageId);
     User unassignLanguageById(Long userId, Long languageId);
 
+    User assignBadgetById(Long userId, Long badetId);
+    User unassignBadgetById(Long userId, Long badgetId);
+
+    User assignCommentById(Long tutorId, Long commentId);
+    User unassignCommentById(Long tutorId, Long commentId);
+
     User getUserById(Long userId);
     User createUser(User user);
     User updateUser(Long userId, User userDetails);
+    User updateMedia(Long userId);
     ResponseEntity<?> deleteUser(Long userId);
+
+    Page<User> getAllUsersBySessionId(Long sessionId, Pageable pageable);
 }

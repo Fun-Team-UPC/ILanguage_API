@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDate;
+import java.util.List;
 
 @Entity
 @Table(name="sessions")
@@ -32,10 +33,6 @@ public class Session extends AuditModel {
     @NotNull
     private String information;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = true)
-    @JoinColumn(name = "schedule_id", nullable = true)
-    @JsonIgnore
-    private Schedule schedule;
 
     public Session(@NotNull LocalDate startAt, @NotNull LocalDate endAt, @NotNull String link, @NotNull String state, @NotNull String topic, @NotNull String information) {
         this.startAt = startAt;
@@ -70,8 +67,34 @@ public class Session extends AuditModel {
 
     public String getInformation() { return information; }
 
-    public Schedule getSchedule() {
-        return schedule;
+
+    public List<User> getUsers() {
+        return users;
+    }
+
+    @ManyToMany(fetch = FetchType.LAZY,
+            cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JoinTable(name ="user_sessions",
+            joinColumns =  {@JoinColumn(name = "session_id")},
+            inverseJoinColumns = {@JoinColumn(name = "user_id")})
+    private List<User> users;
+
+
+    public boolean isRelatedWith(User user ) {
+        return this.getUsers().contains(user);
+    }
+
+    public Session userWith(User user) {
+        if(!isRelatedWith(user)) {
+            this.getUsers().add(user);
+        }
+        return this;
+    }
+
+    public Session unUserWith(User user) {
+        if(this.isRelatedWith(user))
+            this.getUsers().remove(user);
+        return this;
     }
 
     public Session setId(long id) {
@@ -109,8 +132,5 @@ public class Session extends AuditModel {
         return this;
     }
 
-    public Session setSchedule(Schedule schedule) {
-        this.schedule = schedule;
-        return this;
-    }
+
 }

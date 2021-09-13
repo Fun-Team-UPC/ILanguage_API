@@ -1,10 +1,13 @@
 package com.example.ilenguageapi.controller;
 
 import com.example.ilenguageapi.domain.model.Session;
+import com.example.ilenguageapi.domain.model.User;
 import com.example.ilenguageapi.domain.model.UserSubscription;
 import com.example.ilenguageapi.domain.service.SessionService;
 import com.example.ilenguageapi.resource.SaveSessionResource;
 import com.example.ilenguageapi.resource.SessionResource;
+import com.example.ilenguageapi.resource.UserResource;
+import io.cucumber.java.eo.Se;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -84,35 +87,20 @@ public class SessionsController {
     public ResponseEntity<?> deleteSession(@PathVariable Long sessionId) {
         return sessionService.deleteSession(sessionId);
     }
-    @Operation(summary="assing Session to schedule", description="Assing session to  schedule", tags = {"Sessions"})
-    @PostMapping("/sessions/{sessionId}/schedules/scheduleId")
-    public Session assignSessionSchedule(@PathVariable(name = "sessionId") Long sessionId, @RequestParam(name = "scheduleId") Long scheduleId){
-        return sessionService.assignSessionSchedule(sessionId,scheduleId);
-    }
-    /*
-    @Operation(summary = "List Sessions by scheduleId", description = "List Sessions by scheduleId", tags = {"Sessions"})
+
+    @Operation(summary = "List Sessions", description = "List sessions by user id and tutor id", tags = {"Sessions"})
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Sessions returned", content = @Content(mediaType = "application/json")),
-            @ApiResponse(responseCode = "404", description = "Sessions not found")
+            @ApiResponse(responseCode = "200", description = "Returned all sessions", content = @Content(mediaType = "application/json")),
     })
-    @GetMapping("/schedules/{scheduleId}/sessions")
-    public Page<SessionResource> getAllSessionsByScheduleId(@PathVariable int scheduleId, Pageable pageable) {
-        Page<Session> sessionPage = sessionService.getAllSessionsByScheduleId(scheduleId, pageable);
-        List<SessionResource> resources = sessionPage.getContent().stream().map(
-                this::convertToResource).collect(Collectors.toList());
+    @GetMapping("/users/{userId}/tutors/{tutorId}/sessions")
+    public Page<SessionResource> getAllSessionsByUserIdAndTutorId(@PathVariable Long userId, @PathVariable Long tutorId, Pageable pageable){
+        Page<Session> sessionPage = sessionService.getSessionsByUserIdAndTutorId(userId, tutorId, pageable);
+        List<SessionResource> resources = sessionPage.getContent()
+                .stream()
+                .map(this::convertToResource)
+                .collect(Collectors.toList());
         return new PageImpl<>(resources, pageable, resources.size());
     }
-
-    @Operation(summary = "Get Session by Id and ScheduleId", description = "Get Session by Id and ScheduleId", tags = {"Sessions"})
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Session returned", content = @Content(mediaType = "application/json")),
-            @ApiResponse(responseCode = "404", description = "Session not found")
-    })
-    @GetMapping("/schedules/{scheduleId}/sessions/{sessionId}")
-    public SessionResource getSessionByIdAndScheduleId(@PathVariable int scheduleId, @PathVariable Long sessionId) {
-        return convertToResource(sessionService.getSessionByIdAndScheduleId(scheduleId, sessionId));
-    }
-    */
 
 
     private Session convertToEntity(SaveSessionResource resource) {

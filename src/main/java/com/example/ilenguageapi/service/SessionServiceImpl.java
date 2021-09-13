@@ -1,19 +1,20 @@
 package com.example.ilenguageapi.service;
 
 import com.example.ilenguageapi.domain.model.*;
-import com.example.ilenguageapi.domain.repository.ScheduleRepository;
 import com.example.ilenguageapi.domain.repository.SessionRepository;
+import com.example.ilenguageapi.domain.repository.UserRepository;
 import com.example.ilenguageapi.domain.service.SessionService;
 import com.example.ilenguageapi.exception.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.Optional;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class SessionServiceImpl implements SessionService {
@@ -22,7 +23,7 @@ public class SessionServiceImpl implements SessionService {
     private SessionRepository sessionRepository;
 
     @Autowired
-     private ScheduleRepository scheduleRepository;
+    private UserRepository userRepository;
 
     @Override
     public Page<Session> getAllSessions(Pageable pageable) {
@@ -85,40 +86,47 @@ public class SessionServiceImpl implements SessionService {
     }
 
     @Override
-    public Page<Session> getAllSessionsByScheduleId(Long scheduleId, Pageable pageable) {
-        return sessionRepository.findByScheduleId(scheduleId, pageable);
-    }
-
-    @Override
-    public Session getSessionByIdAndScheduleId(Long scheduleId, Long sessionId) {
-        return sessionRepository.findByIdAndScheduleId(sessionId, scheduleId)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Session not found with Id" + sessionId +
-                                " and ScheduleId " + scheduleId));
-    }
-
-    @Override
-    public Session assignSessionSchedule(Long sessionId, Long scheduleId) {
-        Schedule schedule= scheduleRepository.findById(scheduleId)
-                .orElseThrow(() -> new ResourceNotFoundException("Schedule", "Id", scheduleId));
+    public Session assignUserSession(Long userId, Long sessionId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "Id", userId));
         return sessionRepository.findById(sessionId).map(
-                session -> sessionRepository.save(session.setSchedule(schedule)))
+                session -> sessionRepository.save(session.userWith(user)))
                 .orElseThrow(() -> new ResourceNotFoundException("Session", "Id", sessionId));
-
     }
-
-
 
     @Override
-    public ResponseEntity<?> deleteSession(int scheduleId, Long sessionId) {
-        Optional<Schedule> foundSchedule = scheduleRepository.findById((long) scheduleId);
-        if(foundSchedule.isEmpty())
-            throw new ResourceNotFoundException("Schedule", "Id", scheduleId);
-
-        return sessionRepository.findById(sessionId).map(session -> {
-            sessionRepository.delete(session);
-            return ResponseEntity.ok().build();
-        }).orElseThrow(() -> new ResourceNotFoundException(
-                "Session", "Id", sessionId));
+    public Session unAssignUserSession(Long userId, Long sessionId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "Id", userId));
+        return sessionRepository.findById(sessionId).map(
+                session -> sessionRepository.save(session.unUserWith(user)))
+                .orElseThrow(() -> new ResourceNotFoundException("Session", "Id", sessionId));
     }
+
+    @Override
+    public Page<Session> getAllSessionsByUserId(Long userId, Pageable pageable) {
+        return userRepository.findById(userId).map(user -> {
+            List<Session> sessions = user.getSessions();
+            int sessionsCount = sessions.size();
+            return new PageImpl<>(sessions, pageable, sessionsCount); })
+                .orElseThrow(() -> new ResourceNotFoundException("User", "Id", userId));
+    }
+
+    @Override
+    public Page<Session> getSessionsByUserIdAndTutorId(Long userId, Long tutorId, Pageable pageable) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "Id", userId));
+
+        User tutor = userRepository.findById(tutorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Tutor", "Id", userId));
+
+        List<Session> sessionsFilter = sessionRepository.findAll(pageable)
+                .stream()
+                .filter(session -> session.isRelatedWith(user) && session.isRelatedWith(tutor))
+                .collect(Collectors.toList());
+        int sessionsCount = sessionsFilter.size();
+        return new PageImpl<>(sessionsFilter,pageable,sessionsCount);
+    }
+
+
 }

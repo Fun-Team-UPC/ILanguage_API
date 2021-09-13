@@ -106,6 +106,15 @@ public class UserController {
         User user = convertToEntity(resource);
         return convertToResource(userService.updateUser(userId, user));
     }
+
+    @Operation(summary = "Update Media User", description = "Update Media user by userId", tags = {"Users"})
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "User Media Updated", content = @Content(mediaType = "application/json")),
+    })
+    @PutMapping("/user/{userId}/media")
+    public UserResource updateRankingMedia(@PathVariable Long userId){
+        return convertToResource(userService.updateMedia(userId));
+    }
     @Operation(summary = "Delete User", description = "Deleted user by userId", tags = {"Users"})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "User deleted", content = @Content(mediaType = "application/json")),
@@ -127,5 +136,18 @@ public class UserController {
                 .map(this::convertToResource)
                 .collect(Collectors.toList());
         return new PageImpl<>(resources, pageable, resources.size());
+    }
+
+    @Operation(summary = "List users", description = "List users by session id", tags = {"Users"})
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Returned all users", content = @Content(mediaType = "application/json")),
+    })
+    @GetMapping("/sessions/{sessionId}/users")
+    public Page<UserResource> getAllUsersBySessionId(@PathVariable Long sessionId, Pageable pageable) {
+        List<UserResource> users = userService.getAllUsersBySessionId(sessionId, pageable)
+                .getContent().stream().map(this::convertToResource)
+                .collect(Collectors.toList());
+        int userCount = users.size();
+        return new PageImpl<>(users, pageable, userCount);
     }
 }
